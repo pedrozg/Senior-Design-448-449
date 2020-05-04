@@ -14,11 +14,43 @@ public class AStar {
     private final int xstart;
     private final int ystart;
     private int xend, yend;
-    private Stack storage= new Stack(50);
+    private int timer;
+    public Stack<Point> storage= new Stack<>(50);
     
     // Node class for convienience
 		
-    
+    /*
+     * Constructor
+     * AStar正文
+     */
+   AStar(int xstart, int ystart) {
+   	/*
+   	 * Open和Close list 用作路径筛选
+   	 * path存贮路径
+   	 */
+       this.open = new ArrayList<>();
+       this.closed = new ArrayList<>();
+       this.path = new ArrayList<>();
+       this.current = new Node(null, xstart, ystart, 0, 0);
+       this.xstart = xstart;
+       this.ystart = ystart;
+   }
+   AStar(int xstart, int ystart, int xend, int yend, map [][]board) {
+	   	/*
+	   	 * Open和Close list 用作路径筛选
+	   	 * path存贮路径
+	   	 */
+	       this.open = new ArrayList<>();
+	       this.closed = new ArrayList<>();
+	       this.path = new ArrayList<>();
+	       this.current = new Node(null, xstart, ystart, 0, 0);
+	       this.xstart = xstart;
+	       this.ystart = ystart;
+	       loadtostack(pathfinder(xend, yend, board));
+	
+	       
+	}
+	   
     
     
     /*
@@ -33,57 +65,52 @@ public class AStar {
     
     
     
-    class Stack{
-	    public Point data[];
+    class Stack<T>{
+	    public T data[];
 	    public int index=0;
 	    public int xpt;
 	    public int ypt;
 	    
 		Stack(){
-		Point[] data= (Point[]) new Object[100];
+		data=(T[])new Object[100];
 	}
 		
 		Stack(int input){
-		Point[] data= (Point[]) new Object[input];
-			
+		data= (T[]) new Object[input];		
 	}	
-	public void push(Point newEntry) {
+	public void push(T newEntry) {
 			// TODO Auto-generated method stub
 			if(index<data.length){
 				data[index]=newEntry;
 				index++;
+			
 			}
 			else{
 				data=Arrays.copyOf(data, data.length*2);
 				data[index]=newEntry;
+		
 				index++;	
 			}
 		}
 		
-	public Point pop() {
+	public T pop() {
 			// TODO Auto-generated method stub
-			Point get;
+			T get;
+
 			if(index==0)
 				throw new EmptyStackException();
 			
 			if(index!=0){
 				get=data[index-1];
 				data[index-1]=null;
-			index--;
-			return get;
+				index--;		
+				return get;
 			}
 		return null;
 		}
 		
 		//
-	public Point peek() {
-			// TODO Auto-generated method stub
-			if(index==0){
-				throw new EmptyStackException();
-			}
-			return data[index-1];	
-		}
-		
+
 	public boolean isEmpty() {
 			// TODO Auto-generated method stub
 			return index==0;
@@ -131,35 +158,21 @@ public class AStar {
        
    }
  
-     /*
-      * AStar正文
-      */
-    AStar(int xstart, int ystart) {
-    	/*
-    	 * Open和Close list 用作路径筛选
-    	 * path存贮路径
-    	 */
-        this.open = new ArrayList<>();
-        this.closed = new ArrayList<>();
-        this.path = new ArrayList<>();
-        this.current = new Node(null, xstart, ystart, 0, 0);
-        this.xstart = xstart;
-        this.ystart = ystart;
-    }
-    
+  
 	/*
 	 * Open和Close list 用作路径筛选
 	 * path存贮路径
 	 */
     public List<Node> pathfinder(int xend, int yend, map [][]board) {
-
+    	System.out.println("find path now (" + xend + " "+yend);
     	this.xend = xend;
         this.yend = yend;
         this.closed.add(this.current);
         addopen(board);
+ 
         while (this.current.x != this.xend || this.current.y != this.yend) {
             if (this.open.isEmpty()) { 
-                return null;
+                return this.path;
             }
             /*
              * 从OPEN中选取第一个，因为筛选后的OPEN的第一个OBJECT是g+h最小的
@@ -169,9 +182,10 @@ public class AStar {
             this.closed.add(this.current); 
             addopen(board);
         }
-        this.path.add(0, this.current);
+
         while (this.current.x != this.xstart || this.current.y != this.ystart) {
-            this.current = this.current.previous;
+  
+        	this.current = this.current.previous;
             this.path.add(0, this.current);
         }
         return this.path;
@@ -203,9 +217,10 @@ public class AStar {
                 	/*
                 	 * x!=y 就是不会寻找非垂直方向的路径点，根据情况可删除
                 	 */
-                    && this.current.x + x >= 0 && this.current.x + x < 100
-                    && this.current.y + y >= 0 && this.current.y + y < 100
+                    && this.current.x + x >= 0 && this.current.x + x < 101
+                    && this.current.y + y >= 0 && this.current.y + y < 101
                     && board[this.current.x + x][this.current.y + y].isPath()
+                    && !board[this.current.x + x][this.current.y + y].isRiskArea()
                     && !listfind(this.open, node) && !listfind(this.closed, node)) { // if not already done
                         node.g = node.previous.g + 1.; 
                         this.open.add(node);
@@ -223,17 +238,19 @@ public class AStar {
      */
     
     public Stack loadtostack(List<Node> path) {
-		int NodeIndex=0;
-		Point insert=new Point(0,0);
-		while(NodeIndex<path.size()) {
-			insert.setLocation(path.get(NodeIndex).x,path.get(NodeIndex).y);
-			storage.push(insert);	
-			NodeIndex++;
+		 System.out.println("Loading the stack : "+path.size());
+    	int NodeIndex=path.size()-1;
+		while(NodeIndex>=0) {
+			storage.push(new Point(path.get(NodeIndex).x,path.get(NodeIndex).y));	
+			NodeIndex--;
 		}
-		
+		System.out.println("storage size: " + storage.isEmpty());
     	return storage;
-    }
+    } 
     
+    public List<Node> getPathList(){
+    	return this.path;
+    }
  }
     
 /*public static void main(String[] args) {
