@@ -1,0 +1,111 @@
+import sys
+import os
+import pandas as pd
+import numpy as np
+import re
+import itertools
+
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+# 0_script
+# 1_benchmark
+# SAMPLE: output1.dat
+print ("Number of arguments: %d" %  len(sys.argv))
+print ("Argument List: %s" % str(sys.argv))
+
+# open benchmark file
+f1 = open('output1.dat',"r")
+
+# read file into array
+output1 = f1.readlines()
+
+# set to start of file
+running_parser = 0
+
+num_base_stations = int(output1[running_parser])
+running_parser += 1
+
+num_user_equipments = int(output1[running_parser])
+running_parser += 1
+
+num_time_steps = int(output1[running_parser])
+running_parser += 1
+
+tokens = output1[running_parser].split()
+max_x = int(tokens[0])
+max_y = int(tokens[1])
+running_parser += 1
+
+gbr_list_string = output1[running_parser]
+running_parser += 1
+
+priority_list_string = output1[running_parser]
+running_parser += 1
+
+print('num_base_stationg:'+str(num_base_stations)+
+        ' num_user_equipments:'+str(num_user_equipments)+
+        ' num_time_steps:'+str(num_time_steps)+
+        ' max_x:'+str(max_x)+
+        ' max_y:'+str(max_y))
+
+list_of_movements = []
+for i in range(0,num_user_equipments):
+    list_of_timestep = []
+    tokens = output1[running_parser].split()
+    for j in range(0,num_time_steps):
+        list_of_timestep.append([float(tokens[j*2]),float(tokens[j*2+1])])
+    list_of_movements.append(list_of_timestep)
+    running_parser += 1
+
+f1.close()
+# see all points
+#print(list_of_movements)
+
+# now I can print a user spot
+num_user = 2
+time_step = 0
+print('x='+str(list_of_movements[num_user][time_step][0])+
+        ' y='+str(list_of_movements[num_user][time_step][1]))
+
+# i iterate through all list
+for i in range(0,num_user_equipments):
+    for j in range(0,num_time_steps):
+        print('person:'+str(i)+' time_step:'+str(j)+
+                ' x='+str(list_of_movements[i][j][0])+
+                ' y='+str(list_of_movements[i][j][1]))
+
+# look at all individuals at a time step
+time_step = 1
+for i in range(0,num_user_equipments):
+    print('person:'+str(i)+' time_step:'+str(time_step)+
+            ' x='+str(list_of_movements[i][time_step][0])+
+            ' y='+str(list_of_movements[i][time_step][1]))
+
+# With these iterators, you should be able to display in a graphics system
+
+fig = plt.figure()
+ax = plt.axes(xlim=(0, max_x), ylim=(0, max_y))
+#points, = ax.plot([], [], lw=3)
+points, = ax.plot([], [], 'bo', ms=6)
+def init():
+    points.set_data([],[])
+    return points,
+
+def point_reader_update(i):
+    x = []
+    y = []
+    for ues in range(0,num_user_equipments):
+        x.append(list_of_movements[ues][i][0])
+        y.append(list_of_movements[ues][i][1])
+    points.set_data(x, y)
+    return points,
+
+ani = animation.FuncAnimation(fig, point_reader_update, frames=num_time_steps,
+        interval=10, blit=True, init_func=init)
+
+#plt.show()
+writer=animation.FFMpegFileWriter('imagemagick')
+ani.save('output.gif', writer=writer)
